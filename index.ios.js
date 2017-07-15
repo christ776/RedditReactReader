@@ -5,7 +5,30 @@
  */
 
 import React, { Component } from 'react';
-import { AppRegistry, StyleSheet, Text, ListView, View, Image, ActivityIndicator } from 'react-native';
+import { AppRegistry, StyleSheet, ListView, View, ActivityIndicator } from 'react-native';
+import Row from './components/row';
+
+// function hasImage(redditData) {
+//     return redditData.data.preview.images.length > 0;
+//   }
+
+function previewImg(redditData) {
+  const imagePreview = redditData.data.preview;
+  if (typeof imagePreview === 'undefined') {
+    return null;
+  }
+
+  const resolutions = imagePreview.images[0].resolutions;
+  if (resolutions.length > 0) {
+    const thumbnailResolution = resolutions[0];
+    const thumbnailImg = {
+      imageURL: thumbnailResolution.url.replace(/&amp;/g, '&'),
+      width: thumbnailResolution.width,
+      height: thumbnailResolution.height
+    };
+    return thumbnailImg;
+  }
+}
 
 const styles = StyleSheet.create({
   container: {
@@ -30,27 +53,8 @@ const styles = StyleSheet.create({
   }
 });
 
-function hasImage (redditData) {
-  return redditData.data.preview.images.length > 0;
-}
-
-function previewImg(redditData) {
-  const images = redditData.data.preview.images.slice(0);
-  const resolutions = images.resolutions.slice(0);
-  const urlEncodedString = resolutions.url;
-  return urlEncodedString;
-}
-
-const Row = props => (
-  
-  <View style={styles.container}>
-    <Text style={styles.text}>
-      {`${props.data.title}`}
-    </Text>
-  </View>
-);
-
 class RedditReactReader extends Component {
+
   constructor(props) {
     super(props);
     this.state = {
@@ -63,7 +67,10 @@ class RedditReactReader extends Component {
       .then(response => response.json())
       .then((responseJson) => {
         const ds = new ListView.DataSource({ rowHasChanged: (r1, r2) => r1 !== r2 });
-        const topReddits = responseJson.data.children;
+        const topReddits = responseJson.data.children.map(reddit => ({
+          title: reddit.data.title,
+          thumbnail: previewImg(reddit)
+        }));
         this.setState({
           isLoading: false,
           dataSource: ds.cloneWithRows(topReddits)
@@ -84,7 +91,6 @@ class RedditReactReader extends Component {
         </View>
       );
     }
-
     return (
       <View style={styles.container}>
         <ListView
